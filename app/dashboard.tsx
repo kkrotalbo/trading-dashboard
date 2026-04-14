@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { supabase } from '@/lib/supabase'
+import { createClient } from '@supabase/supabase-js'
 import type { Operation, SignalNotification } from '@/types/trading'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -154,7 +154,9 @@ function OperationsTable({ ops }: { ops: Operation[] }) {
 
 // ── Dashboard principal ───────────────────────────────────────────────────────
 
-export default function Dashboard() {
+export default function Dashboard({ supabaseUrl, supabaseKey }: { supabaseUrl: string; supabaseKey: string }) {
+  const supabase = createClient(supabaseUrl, supabaseKey)
+
   const [operations, setOperations] = useState<Operation[]>([])
   const [notifications, setNotifications] = useState<SignalNotification[]>([])
   const [error, setError] = useState<string | null>(null)
