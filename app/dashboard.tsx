@@ -16,11 +16,11 @@ function fmt(val: number | string | null, decimals = 2): string {
 
 function opStyle(op: string) {
   switch (op) {
-    case 'LONG_OPEN':  return { label: '▲ LONG Apertura',  text: 'text-emerald-400', border: 'border-emerald-500/40', bg: 'bg-emerald-500/10' }
-    case 'LONG_CLOSE': return { label: '▲ LONG Cierre',    text: 'text-emerald-300', border: 'border-emerald-500/20', bg: 'bg-emerald-500/5'  }
-    case 'SHORT_OPEN': return { label: '▼ SHORT Apertura', text: 'text-purple-400',  border: 'border-purple-500/40',  bg: 'bg-purple-500/10'  }
-    case 'SHORT_CLOSE':return { label: '▼ SHORT Cierre',   text: 'text-purple-300',  border: 'border-purple-500/20',  bg: 'bg-purple-500/5'   }
-    default:           return { label: op,                 text: 'text-gray-400',    border: 'border-gray-700',       bg: 'bg-gray-800'       }
+    case 'LONG_OPEN':  return { label: '▲ LONG Apertura',  color: '#34d399' }
+    case 'LONG_CLOSE': return { label: '▲ LONG Cierre',    color: '#6ee7b7' }
+    case 'SHORT_OPEN': return { label: '▼ SHORT Apertura', color: '#c084fc' }
+    case 'SHORT_CLOSE':return { label: '▼ SHORT Cierre',   color: '#d8b4fe' }
+    default:           return { label: op,                 color: '#9ca3af' }
   }
 }
 
@@ -59,65 +59,89 @@ function getPieData(ops: Operation[]) {
 // ── Subcomponentes ────────────────────────────────────────────────────────────
 
 function PieChart({ usdtPct, ethPct }: { usdtPct: number; ethPct: number }) {
-  const displayEth = Math.round(ethPct)
-  const displayUsdt = 100 - displayEth
+  const usdt = Math.round(usdtPct)
+  const eth = 100 - usdt
+
+  const conicGradient = eth > 0
+    ? `conic-gradient(#10b981 0% ${usdt}%, #a855f7 ${usdt}% 100%)`
+    : `conic-gradient(#10b981 0% 100%)`
+
   return (
-    <div className="flex flex-col items-center justify-center gap-5">
-      <div className="relative">
-        <div
-          className="w-40 h-40 rounded-full"
-          style={{
-            background: ethPct > 0
-              ? `conic-gradient(#10b981 0% ${displayUsdt}%, #a855f7 ${displayUsdt}% 100%)`
-              : 'conic-gradient(#10b981 0% 100%)',
-            boxShadow: '0 0 40px rgba(16,185,129,0.25), 0 0 80px rgba(168,85,247,0.15)',
-          }}
-        />
-        <div className="absolute inset-4 rounded-full bg-black flex flex-col items-center justify-center">
-          {ethPct > 0 ? (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px' }}>
+      {/* Pie */}
+      <div style={{ position: 'relative', width: '160px', height: '160px' }}>
+        <div style={{
+          width: '160px',
+          height: '160px',
+          borderRadius: '50%',
+          background: conicGradient,
+          boxShadow: '0 0 40px rgba(16,185,129,0.3), 0 0 80px rgba(168,85,247,0.2)',
+        }} />
+        {/* Inner circle */}
+        <div style={{
+          position: 'absolute',
+          top: '20px', left: '20px',
+          width: '120px', height: '120px',
+          borderRadius: '50%',
+          backgroundColor: '#000',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}>
+          {eth > 0 ? (
             <>
-              <span className="text-purple-400 font-bold text-xl">{displayEth}%</span>
-              <span className="text-gray-500 text-xs">en posición</span>
+              <span style={{ color: '#c084fc', fontWeight: 700, fontSize: '22px' }}>{eth}%</span>
+              <span style={{ color: '#6b7280', fontSize: '11px' }}>en posición</span>
             </>
           ) : (
             <>
-              <span className="text-emerald-400 font-bold text-xl">100%</span>
-              <span className="text-gray-500 text-xs">USDT</span>
+              <span style={{ color: '#34d399', fontWeight: 700, fontSize: '22px' }}>100%</span>
+              <span style={{ color: '#6b7280', fontSize: '11px' }}>USDT</span>
             </>
           )}
         </div>
       </div>
-      <div className="flex gap-5 text-xs">
-        <div className="flex items-center gap-2">
-          <span className="w-3 h-3 rounded-full bg-emerald-500 shadow-lg shadow-emerald-500/50" />
-          <span className="text-gray-400">USDT <span className="text-white font-semibold">{displayUsdt}%</span></span>
+
+      {/* Legend */}
+      <div style={{ display: 'flex', gap: '20px', fontSize: '12px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: '#10b981', display: 'inline-block', boxShadow: '0 0 8px #10b981' }} />
+          <span style={{ color: '#9ca3af' }}>USDT <strong style={{ color: '#fff' }}>{usdt}%</strong></span>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="w-3 h-3 rounded-full bg-purple-500 shadow-lg shadow-purple-500/50" />
-          <span className="text-gray-400">Posición <span className="text-white font-semibold">{displayEth}%</span></span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: '#a855f7', display: 'inline-block', boxShadow: '0 0 8px #a855f7' }} />
+          <span style={{ color: '#9ca3af' }}>Posición <strong style={{ color: '#fff' }}>{eth}%</strong></span>
         </div>
       </div>
     </div>
   )
 }
 
-function StatRow({ label, value, color = 'text-white' }: { label: string; value: string; color?: string }) {
+function StatRow({ label, value, color = '#ffffff' }: { label: string; value: string; color?: string }) {
   return (
-    <div className="flex justify-between items-center py-2.5 border-b border-white/5 last:border-0">
-      <span className="text-sm text-gray-500">{label}</span>
-      <span className={`text-sm font-semibold tabular-nums ${color}`}>{value}</span>
+    <div style={{
+      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+      padding: '10px 0', borderBottom: '1px solid rgba(255,255,255,0.06)',
+    }}>
+      <span style={{ fontSize: '14px', color: '#6b7280' }}>{label}</span>
+      <span style={{ fontSize: '14px', fontWeight: 600, color, fontVariantNumeric: 'tabular-nums' }}>{value}</span>
     </div>
   )
 }
 
 function ErrorBanner({ message, onClose }: { message: string; onClose: () => void }) {
   return (
-    <div className="bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3 flex items-start justify-between gap-3">
-      <div className="flex items-start gap-3">
-        <span className="text-red-400 mt-0.5">⚠</span>
-        <p className="text-red-400 text-sm">{message}</p>
+    <div style={{
+      background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)',
+      borderRadius: '12px', padding: '12px 16px',
+      display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px',
+    }}>
+      <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
+        <span style={{ color: '#f87171' }}>⚠</span>
+        <p style={{ color: '#f87171', fontSize: '14px', margin: 0 }}>{message}</p>
       </div>
-      <button onClick={onClose} className="text-red-400 hover:text-red-300 shrink-0">✕</button>
+      <button onClick={onClose} style={{ color: '#f87171', background: 'none', border: 'none', cursor: 'pointer', fontSize: '16px' }}>✕</button>
     </div>
   )
 }
@@ -125,13 +149,24 @@ function ErrorBanner({ message, onClose }: { message: string; onClose: () => voi
 function NotificationCard({ notif, onClose }: { notif: SignalNotification; onClose: () => void }) {
   const style = opStyle(notif.operation.operacion)
   const isOpen = notif.operation.operacion.endsWith('_OPEN')
+  const borderColor = isOpen
+    ? (notif.operation.operacion.includes('LONG') ? 'rgba(52,211,153,0.4)' : 'rgba(192,132,252,0.4)')
+    : 'rgba(255,255,255,0.1)'
+  const bgColor = isOpen
+    ? (notif.operation.operacion.includes('LONG') ? 'rgba(16,185,129,0.1)' : 'rgba(168,85,247,0.1)')
+    : 'rgba(255,255,255,0.05)'
+
   return (
-    <div className={`border rounded-xl px-4 py-3 flex items-center justify-between gap-4 backdrop-blur-sm ${style.border} ${style.bg}`}>
-      <div className="flex items-center gap-3">
-        <span className="text-2xl">{isOpen ? '🔔' : '✅'}</span>
+    <div style={{
+      border: `1px solid ${borderColor}`, borderRadius: '12px',
+      padding: '12px 16px', background: bgColor,
+      display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px',
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <span style={{ fontSize: '24px' }}>{isOpen ? '🔔' : '✅'}</span>
         <div>
-          <p className={`font-semibold ${style.text}`}>{style.label}</p>
-          <p className="text-sm text-gray-400">
+          <p style={{ margin: 0, fontWeight: 600, color: style.color }}>{style.label}</p>
+          <p style={{ margin: 0, fontSize: '13px', color: '#9ca3af' }}>
             {notif.operation.par} @ ${fmt(notif.operation.precio)}
             {notif.operation.rsi !== null && ` · RSI: ${n(notif.operation.rsi).toFixed(1)}`}
             {notif.operation.pnl_usdt !== null &&
@@ -140,63 +175,61 @@ function NotificationCard({ notif, onClose }: { notif: SignalNotification; onClo
           </p>
         </div>
       </div>
-      <button onClick={onClose} className="text-gray-500 hover:text-gray-300 shrink-0">✕</button>
+      <button onClick={onClose} style={{ color: '#6b7280', background: 'none', border: 'none', cursor: 'pointer', fontSize: '18px' }}>✕</button>
     </div>
   )
 }
 
 function OperationsTable({ ops }: { ops: Operation[] }) {
   if (ops.length === 0) {
-    return (
-      <div className="px-6 py-16 text-center text-gray-600 text-sm">
-        Sin operaciones registradas aún.
-      </div>
-    )
+    return <div style={{ padding: '64px 24px', textAlign: 'center', color: '#4b5563', fontSize: '14px' }}>Sin operaciones registradas aún.</div>
   }
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-sm">
+    <div style={{ overflowX: 'auto' }}>
+      <table style={{ width: '100%', fontSize: '14px', borderCollapse: 'collapse' }}>
         <thead>
-          <tr className="text-xs text-gray-500 uppercase tracking-wider border-b border-white/5">
-            <th className="text-left px-4 py-3">Fecha</th>
-            <th className="text-left px-4 py-3">Operación</th>
-            <th className="text-right px-4 py-3">Precio</th>
-            <th className="text-right px-4 py-3">RSI</th>
-            <th className="text-right px-4 py-3">P&amp;L</th>
-            <th className="text-right px-4 py-3">Saldo</th>
-            <th className="text-left px-4 py-3">Razón</th>
+          <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+            {['Fecha', 'Operación', 'Precio', 'RSI', 'P&L', 'Saldo', 'Razón'].map((h, i) => (
+              <th key={h} style={{
+                padding: '12px 16px', fontSize: '11px', textTransform: 'uppercase',
+                letterSpacing: '0.05em', color: '#6b7280', fontWeight: 600,
+                textAlign: i >= 2 && i <= 5 ? 'right' : 'left',
+              }}>{h}</th>
+            ))}
           </tr>
         </thead>
         <tbody>
           {ops.map((op) => {
             const style = opStyle(op.operacion)
             const pnl = n(op.pnl_usdt)
-            const pnlColor = op.pnl_usdt === null ? 'text-gray-600' : pnl >= 0 ? 'text-emerald-400' : 'text-red-400'
+            const pnlColor = op.pnl_usdt === null ? '#4b5563' : pnl >= 0 ? '#34d399' : '#f87171'
             return (
-              <tr key={op.id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
-                <td className="px-4 py-3 text-gray-500 whitespace-nowrap tabular-nums text-xs">
+              <tr key={op.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}
+                onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.03)')}
+                onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                <td style={{ padding: '12px 16px', color: '#6b7280', fontSize: '12px', whiteSpace: 'nowrap' }}>
                   {new Date(op.fecha).toLocaleString('es-CL', {
                     timeZone: 'America/Santiago',
                     day: '2-digit', month: '2-digit', year: '2-digit',
                     hour: '2-digit', minute: '2-digit',
                   })}
                 </td>
-                <td className={`px-4 py-3 font-medium whitespace-nowrap ${style.text}`}>
+                <td style={{ padding: '12px 16px', fontWeight: 500, color: style.color, whiteSpace: 'nowrap' }}>
                   {style.label}
                 </td>
-                <td className="px-4 py-3 text-right tabular-nums text-gray-300">
+                <td style={{ padding: '12px 16px', textAlign: 'right', color: '#d1d5db', fontVariantNumeric: 'tabular-nums' }}>
                   ${fmt(op.precio)}
                 </td>
-                <td className="px-4 py-3 text-right tabular-nums text-gray-400">
+                <td style={{ padding: '12px 16px', textAlign: 'right', color: '#9ca3af', fontVariantNumeric: 'tabular-nums' }}>
                   {op.rsi !== null ? n(op.rsi).toFixed(1) : '—'}
                 </td>
-                <td className={`px-4 py-3 text-right tabular-nums font-medium ${pnlColor}`}>
+                <td style={{ padding: '12px 16px', textAlign: 'right', color: pnlColor, fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>
                   {op.pnl_usdt !== null ? `${pnl >= 0 ? '+' : ''}$${fmt(op.pnl_usdt)}` : '—'}
                 </td>
-                <td className="px-4 py-3 text-right tabular-nums text-gray-300">
+                <td style={{ padding: '12px 16px', textAlign: 'right', color: '#d1d5db', fontVariantNumeric: 'tabular-nums' }}>
                   ${fmt(op.saldo_acumulado)}
                 </td>
-                <td className="px-4 py-3 text-gray-500 text-xs max-w-[140px] truncate">
+                <td style={{ padding: '12px 16px', color: '#6b7280', fontSize: '12px', maxWidth: '140px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {op.razon || '—'}
                 </td>
               </tr>
@@ -274,125 +307,101 @@ export default function Dashboard({ supabaseUrl, supabaseKey }: { supabaseUrl: s
   const stats = calcStats(operations)
   const pie = getPieData(operations)
 
-  return (
-    <div className="min-h-screen bg-black text-white relative overflow-x-hidden">
+  const statusColor = realtimeStatus === 'connected' ? '#34d399' : realtimeStatus === 'error' ? '#f87171' : '#fbbf24'
+  const statusLabel = realtimeStatus === 'connected' ? 'En vivo' : realtimeStatus === 'error' ? 'Sin conexión' : 'Conectando...'
 
-      {/* Gradient blobs de fondo */}
-      <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute top-0 left-0 w-[700px] h-[700px] bg-emerald-500/10 rounded-full blur-[140px] -translate-x-1/2 -translate-y-1/2" />
-        <div className="absolute bottom-0 right-0 w-[700px] h-[700px] bg-purple-600/10 rounded-full blur-[140px] translate-x-1/2 translate-y-1/2" />
-        <div className="absolute top-1/2 left-1/2 w-[400px] h-[400px] bg-purple-500/5 rounded-full blur-[100px] -translate-x-1/2 -translate-y-1/2" />
+  return (
+    <div style={{ minHeight: '100vh', backgroundColor: '#000000', color: '#ffffff', position: 'relative', overflowX: 'hidden', fontFamily: 'system-ui, sans-serif' }}>
+
+      {/* Gradient blobs */}
+      <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0 }}>
+        <div style={{ position: 'absolute', top: '-200px', left: '-200px', width: '600px', height: '600px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(16,185,129,0.20) 0%, transparent 70%)', filter: 'blur(40px)' }} />
+        <div style={{ position: 'absolute', bottom: '-200px', right: '-200px', width: '600px', height: '600px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(168,85,247,0.20) 0%, transparent 70%)', filter: 'blur(40px)' }} />
       </div>
 
       {/* Header */}
-      <header className="relative border-b border-white/10 px-6 py-4 backdrop-blur-sm bg-black/40">
-        <div className="max-w-6xl mx-auto flex items-center justify-between">
+      <header style={{ position: 'relative', zIndex: 1, borderBottom: '1px solid rgba(255,255,255,0.1)', padding: '16px 24px', backdropFilter: 'blur(10px)', background: 'rgba(0,0,0,0.6)' }}>
+        <div style={{ maxWidth: '1152px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
-            <h1 className="text-lg font-bold bg-gradient-to-r from-emerald-400 via-white to-purple-400 bg-clip-text text-transparent">
+            <h1 style={{ margin: 0, fontSize: '18px', fontWeight: 700, background: 'linear-gradient(90deg, #34d399, #ffffff, #c084fc)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
               Trading Dashboard
             </h1>
-            <p className="text-xs text-gray-500 mt-0.5">ETH/USDT 1H — Paper Trading</p>
+            <p style={{ margin: 0, fontSize: '12px', color: '#6b7280', marginTop: '2px' }}>ETH/USDT 1H — Paper Trading</p>
           </div>
-          <div className={`flex items-center gap-2 border rounded-full px-3 py-1.5 text-xs backdrop-blur-sm ${
-            realtimeStatus === 'connected' ? 'border-emerald-500/30 bg-emerald-500/10' :
-            realtimeStatus === 'error'     ? 'border-red-500/30 bg-red-500/10' :
-                                             'border-yellow-500/30 bg-yellow-500/10'
-          }`}>
-            <span className={`w-1.5 h-1.5 rounded-full ${
-              realtimeStatus === 'connected' ? 'bg-emerald-400 animate-pulse' :
-              realtimeStatus === 'error'     ? 'bg-red-400' : 'bg-yellow-400 animate-pulse'
-            }`} />
-            <span className={
-              realtimeStatus === 'connected' ? 'text-emerald-400' :
-              realtimeStatus === 'error'     ? 'text-red-400' : 'text-yellow-400'
-            }>
-              {realtimeStatus === 'connected' ? 'En vivo' :
-               realtimeStatus === 'error'     ? 'Sin conexión' : 'Conectando...'}
-            </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', border: `1px solid ${statusColor}40`, borderRadius: '9999px', padding: '6px 12px', background: `${statusColor}15` }}>
+            <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: statusColor, display: 'inline-block', boxShadow: `0 0 8px ${statusColor}` }} />
+            <span style={{ fontSize: '12px', color: statusColor }}>{statusLabel}</span>
           </div>
         </div>
       </header>
 
-      <main className="relative max-w-6xl mx-auto px-6 py-6 space-y-5">
+      <main style={{ position: 'relative', zIndex: 1, maxWidth: '1152px', margin: '0 auto', padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
 
-        {/* Error */}
         {error && <ErrorBanner message={error} onClose={() => setError(null)} />}
 
-        {/* Notificaciones */}
         {notifications.length > 0 && (
-          <div className="space-y-2">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             {notifications.map(notif => (
               <NotificationCard key={notif.id} notif={notif} onClose={() => dismissNotification(notif.id)} />
             ))}
           </div>
         )}
 
-        {/* Stats + Pie */}
-        <div
-          className="border border-white/10 rounded-2xl p-6 backdrop-blur-sm bg-white/5"
-          style={{ boxShadow: '0 0 60px rgba(16,185,129,0.05), 0 0 100px rgba(168,85,247,0.05)' }}
-        >
-          <div className="flex flex-col md:flex-row gap-8">
+        {/* Stats + Pie card */}
+        <div style={{
+          border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px', padding: '24px',
+          background: 'rgba(255,255,255,0.04)', backdropFilter: 'blur(10px)',
+          boxShadow: '0 0 60px rgba(16,185,129,0.08), 0 0 100px rgba(168,85,247,0.08)',
+        }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '32px' }}>
 
             {/* Stats */}
-            <div className="flex-1 min-w-0">
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-4">
+            <div style={{ flex: '1', minWidth: '280px' }}>
+              <p style={{ margin: '0 0 16px 0', fontSize: '11px', fontWeight: 600, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
                 Resumen de cuenta
               </p>
-              <div>
-                <StatRow label="Capital inicial"       value="$1,000.00" />
-                <StatRow
-                  label="Saldo actual"
-                  value={`$${fmt(stats.balance)}`}
-                  color={stats.balance >= 1000 ? 'text-emerald-400' : 'text-red-400'}
-                />
-                <StatRow
-                  label="P&L Total"
-                  value={`${stats.pnl >= 0 ? '+' : ''}$${fmt(stats.pnl)} (${stats.pnlPct >= 0 ? '+' : ''}${stats.pnlPct.toFixed(2)}%)`}
-                  color={stats.pnl >= 0 ? 'text-emerald-400' : 'text-red-400'}
-                />
-                <StatRow label="Operaciones cerradas"  value={stats.totalOps.toString()} />
-                <StatRow
-                  label="Win Rate"
-                  value={`${stats.winRate.toFixed(1)}%`}
-                  color={stats.winRate >= 50 ? 'text-emerald-400' : 'text-red-400'}
-                />
-                <StatRow label="USDT disponible" value={`$${fmt(pie.usdtAmt)}`} color="text-emerald-400" />
-                {pie.ethAmt > 0 && (
-                  <StatRow label="En posición" value={`$${fmt(pie.ethAmt)}`} color="text-purple-400" />
-                )}
-              </div>
+              <StatRow label="Capital inicial" value="$1,000.00" />
+              <StatRow label="Saldo actual" value={`$${fmt(stats.balance)}`} color={stats.balance >= 1000 ? '#34d399' : '#f87171'} />
+              <StatRow
+                label="P&L Total"
+                value={`${stats.pnl >= 0 ? '+' : ''}$${fmt(stats.pnl)} (${stats.pnlPct >= 0 ? '+' : ''}${stats.pnlPct.toFixed(2)}%)`}
+                color={stats.pnl >= 0 ? '#34d399' : '#f87171'}
+              />
+              <StatRow label="Operaciones cerradas" value={stats.totalOps.toString()} />
+              <StatRow label="Win Rate" value={`${stats.winRate.toFixed(1)}%`} color={stats.winRate >= 50 ? '#34d399' : '#f87171'} />
+              <StatRow label="USDT disponible" value={`$${fmt(pie.usdtAmt)}`} color="#34d399" />
+              {pie.ethAmt > 0 && <StatRow label="En posición" value={`$${fmt(pie.ethAmt)}`} color="#c084fc" />}
             </div>
 
             {/* Divider */}
-            <div className="hidden md:block w-px bg-gradient-to-b from-transparent via-white/10 to-transparent" />
-            <div className="md:hidden h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+            <div style={{ width: '1px', background: 'linear-gradient(180deg, transparent, rgba(255,255,255,0.1), transparent)', alignSelf: 'stretch' }} />
 
             {/* Pie */}
-            <div className="flex items-center justify-center md:w-64">
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: '220px' }}>
               <PieChart usdtPct={pie.usdtPct} ethPct={pie.ethPct} />
             </div>
           </div>
         </div>
 
-        {/* Tabla */}
-        <div
-          className="border border-white/10 rounded-2xl overflow-hidden backdrop-blur-sm bg-white/5"
-          style={{ boxShadow: '0 0 60px rgba(16,185,129,0.03), 0 0 100px rgba(168,85,247,0.03)' }}
-        >
-          <div
-            className="px-6 py-4 border-b border-white/10 flex items-center justify-between"
-            style={{ background: 'linear-gradient(90deg, rgba(16,185,129,0.07) 0%, rgba(168,85,247,0.07) 100%)' }}
-          >
-            <h2 className="font-semibold text-gray-200">Historial de operaciones</h2>
-            <span className="text-xs text-gray-500 bg-white/5 border border-white/10 rounded-full px-3 py-1">
+        {/* Table card */}
+        <div style={{
+          border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px', overflow: 'hidden',
+          background: 'rgba(255,255,255,0.04)', backdropFilter: 'blur(10px)',
+        }}>
+          <div style={{
+            padding: '16px 24px', borderBottom: '1px solid rgba(255,255,255,0.08)',
+            background: 'linear-gradient(90deg, rgba(16,185,129,0.08) 0%, rgba(168,85,247,0.08) 100%)',
+            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          }}>
+            <h2 style={{ margin: 0, fontSize: '15px', fontWeight: 600, color: '#e5e7eb' }}>Historial de operaciones</h2>
+            <span style={{ fontSize: '12px', color: '#6b7280', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '9999px', padding: '4px 12px' }}>
               {operations.length} registros
             </span>
           </div>
           {loading ? (
-            <div className="px-6 py-16 text-center">
-              <div className="inline-block w-6 h-6 border-2 border-emerald-500/30 border-t-emerald-500 rounded-full animate-spin mb-3" />
-              <p className="text-gray-600 text-sm">Cargando datos...</p>
+            <div style={{ padding: '64px 24px', textAlign: 'center' }}>
+              <div style={{ display: 'inline-block', width: '24px', height: '24px', border: '2px solid rgba(16,185,129,0.3)', borderTopColor: '#10b981', borderRadius: '50%', animation: 'spin 0.8s linear infinite', marginBottom: '12px' }} />
+              <p style={{ color: '#4b5563', fontSize: '14px', margin: 0 }}>Cargando datos...</p>
             </div>
           ) : (
             <OperationsTable ops={operations} />
@@ -400,6 +409,8 @@ export default function Dashboard({ supabaseUrl, supabaseKey }: { supabaseUrl: s
         </div>
 
       </main>
+
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   )
 }
