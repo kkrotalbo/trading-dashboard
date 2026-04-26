@@ -105,9 +105,12 @@ function CapitalChart({ ops }: { ops: Operation[] }) {
   const pad = { top: 18, right: 18, bottom: 28, left: 52 }
   const cW = W - pad.left - pad.right
   const cH = H - pad.top - pad.bottom
+  const BASELINE = 1000
+  const GREEN = '#34d399'
+  const RED = '#f87171'
 
   const dataPoints = [
-    { x: 0, y: 1000 },
+    { x: 0, y: BASELINE },
     ...closes.map((op, i) => ({ x: i + 1, y: n(op.saldo_acumulado) })),
   ]
 
@@ -122,22 +125,41 @@ function CapitalChart({ ops }: { ops: Operation[] }) {
 
   const maxX = dataPoints.length - 1
   const vals = dataPoints.map(p => p.y)
-  const minY = Math.min(...vals)
-  const maxY = Math.max(...vals)
+  // Always include baseline so $1000 line is always visible in the chart
+  const minY = Math.min(BASELINE, ...vals)
+  const maxY = Math.max(BASELINE, ...vals)
   const rangeY = maxY - minY || 100
 
   const sx = (x: number) => pad.left + (x / maxX) * cW
   const sy = (y: number) => pad.top + (1 - (y - minY) / rangeY) * cH
 
-  const pts = dataPoints.map(p => `${sx(p.x)},${sy(p.y)}`).join(' L ')
-  const linePath = `M ${pts}`
-  const areaPath = `M ${sx(0)},${sy(dataPoints[0].y)} L ${pts} L ${sx(maxX)},${H - pad.bottom} L ${sx(0)},${H - pad.bottom} Z`
+  const baselineY = sy(BASELINE)
+
+  // Build the full polygon path for area fill
+  const pts = dataPoints.map(p => `${sx(p.x).toFixed(1)},${sy(p.y).toFixed(1)}`).join(' L ')
+  const areaPath = `M ${sx(0).toFixed(1)},${sy(dataPoints[0].y).toFixed(1)} L ${pts} L ${sx(maxX).toFixed(1)},${(H - pad.bottom).toFixed(1)} L ${sx(0).toFixed(1)},${(H - pad.bottom).toFixed(1)} Z`
+
+  // Build colored line segments, splitting at baseline crossings
+  type Seg = { d: string; color: string }
+  const segs: Seg[] = []
+  for (let i = 0; i < dataPoints.length - 1; i++) {
+    const a = dataPoints[i]
+    const b = dataPoints[i + 1]
+    const aAbove = a.y >= BASELINE
+    const bAbove = b.y >= BASELINE
+    if (aAbove === bAbove) {
+      segs.push({ d: `M ${sx(a.x).toFixed(1)},${sy(a.y).toFixed(1)} L ${sx(b.x).toFixed(1)},${sy(b.y).toFixed(1)}`, color: aAbove ? GREEN : RED })
+    } else {
+      // Segment crosses $1000 — interpolate crossing point
+      const t = (BASELINE - a.y) / (b.y - a.y)
+      const cx = a.x + t * (b.x - a.x)
+      segs.push({ d: `M ${sx(a.x).toFixed(1)},${sy(a.y).toFixed(1)} L ${sx(cx).toFixed(1)},${baselineY.toFixed(1)}`, color: aAbove ? GREEN : RED })
+      segs.push({ d: `M ${sx(cx).toFixed(1)},${baselineY.toFixed(1)} L ${sx(b.x).toFixed(1)},${sy(b.y).toFixed(1)}`, color: bAbove ? GREEN : RED })
+    }
+  }
 
   const last = dataPoints[dataPoints.length - 1].y
-  const positive = last >= 1000
-  const lineColor = positive ? '#00f5ff' : '#ff2d7a'
-  const glowId = 'cpGlow'
-  const gradId = 'cpArea'
+  const lastColor = last >= BASELINE ? GREEN : RED
 
   const yTicks = [0, 0.25, 0.5, 0.75, 1].map(r => minY + r * rangeY)
 
@@ -145,14 +167,17 @@ function CapitalChart({ ops }: { ops: Operation[] }) {
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
       <svg width={W} height={H} style={{ overflow: 'visible' }}>
         <defs>
-          <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={lineColor} stopOpacity="0.35" />
-            <stop offset="100%" stopColor={lineColor} stopOpacity="0.02" />
-          </linearGradient>
-          <filter id={glowId} x="-50%" y="-50%" width="200%" height="200%">
+          <filter id="cpGlow" x="-50%" y="-50%" width="200%" height="200%">
             <feGaussianBlur stdDeviation="2.5" result="blur" />
             <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
           </filter>
+          {/* Clip regions for dual-color area fill */}
+          <clipPath id="clipAbove">
+            <rect x={pad.left} y={pad.top} width={cW} height={Math.max(0, baselineY - pad.top)} />
+          </clipPath>
+          <clipPath id="clipBelow">
+            <rect x={pad.left} y={baselineY} width={cW} height={Math.max(0, H - pad.bottom - baselineY)} />
+          </clipPath>
         </defs>
 
         {/* Y-axis grid + labels */}
@@ -168,30 +193,29 @@ function CapitalChart({ ops }: { ops: Operation[] }) {
         ))}
 
         {/* Baseline $1000 */}
-        {minY < 1000 && maxY > 1000 && (
-          <line x1={pad.left} y1={sy(1000)} x2={W - pad.right} y2={sy(1000)}
-            stroke="rgba(255,255,255,0.25)" strokeWidth="1" strokeDasharray="5,3" />
-        )}
+        <line x1={pad.left} y1={baselineY} x2={W - pad.right} y2={baselineY}
+          stroke="rgba(255,255,255,0.22)" strokeWidth="1" strokeDasharray="5,3" />
 
-        {/* Area fill */}
-        <path d={areaPath} fill={`url(#${gradId})`} />
+        {/* Dual-color area fill */}
+        <path d={areaPath} fill="rgba(52,211,153,0.10)" clipPath="url(#clipAbove)" />
+        <path d={areaPath} fill="rgba(248,113,113,0.10)" clipPath="url(#clipBelow)" />
 
-        {/* Neon line */}
-        <path d={linePath} fill="none" stroke={lineColor} strokeWidth="2.5"
-          filter={`url(#${glowId})`} strokeLinecap="round" strokeLinejoin="round" />
+        {/* Colored line segments */}
+        {segs.map((seg, i) => (
+          <path key={i} d={seg.d} fill="none" stroke={seg.color} strokeWidth="2.5"
+            filter="url(#cpGlow)" strokeLinecap="round" strokeLinejoin="round" />
+        ))}
 
-        {/* Accent dots every ~20% of points */}
-        {dataPoints
-          .filter((_, i) => i === 0 || i === maxX || (maxX > 4 && i % Math.max(1, Math.floor(maxX / 5)) === 0))
-          .map((p, i) => (
-            <circle key={i} cx={sx(p.x)} cy={sy(p.y)} r="3"
-              fill={lineColor} filter={`url(#${glowId})`} />
-          ))}
+        {/* Dots colored by position relative to baseline */}
+        {dataPoints.map((p, i) => {
+          const color = p.y >= BASELINE ? GREEN : RED
+          return <circle key={i} cx={sx(p.x)} cy={sy(p.y)} r="2.5" fill={color} filter="url(#cpGlow)" />
+        })}
 
         {/* Last point pulse ring */}
         <circle cx={sx(maxX)} cy={sy(last)} r="5"
-          fill="none" stroke={lineColor} strokeWidth="1.5" strokeOpacity="0.5" />
-        <circle cx={sx(maxX)} cy={sy(last)} r="3" fill={lineColor} />
+          fill="none" stroke={lastColor} strokeWidth="1.5" strokeOpacity="0.5" />
+        <circle cx={sx(maxX)} cy={sy(last)} r="3" fill={lastColor} />
         <circle cx={sx(maxX)} cy={sy(last)} r="1.5" fill="#000" />
 
         {/* X-axis line */}
