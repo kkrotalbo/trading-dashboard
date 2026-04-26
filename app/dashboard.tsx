@@ -97,6 +97,114 @@ function PieChart({ usdtPct, ethPct }: { usdtPct: number; ethPct: number }) {
   )
 }
 
+function CapitalChart({ ops }: { ops: Operation[] }) {
+  const closes = [...ops].filter(o => o.pnl_usdt !== null).reverse()
+
+  const W = 300
+  const H = 190
+  const pad = { top: 18, right: 18, bottom: 28, left: 52 }
+  const cW = W - pad.left - pad.right
+  const cH = H - pad.top - pad.bottom
+
+  const dataPoints = [
+    { x: 0, y: 1000 },
+    ...closes.map((op, i) => ({ x: i + 1, y: n(op.saldo_acumulado) })),
+  ]
+
+  if (dataPoints.length < 2) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: `${W}px`, height: `${H}px`, gap: '8px' }}>
+        <span style={{ color: '#4b5563', fontSize: '28px' }}>📈</span>
+        <span style={{ color: '#4b5563', fontSize: '12px' }}>Sin operaciones aún</span>
+      </div>
+    )
+  }
+
+  const maxX = dataPoints.length - 1
+  const vals = dataPoints.map(p => p.y)
+  const minY = Math.min(...vals)
+  const maxY = Math.max(...vals)
+  const rangeY = maxY - minY || 100
+
+  const sx = (x: number) => pad.left + (x / maxX) * cW
+  const sy = (y: number) => pad.top + (1 - (y - minY) / rangeY) * cH
+
+  const pts = dataPoints.map(p => `${sx(p.x)},${sy(p.y)}`).join(' L ')
+  const linePath = `M ${pts}`
+  const areaPath = `M ${sx(0)},${sy(dataPoints[0].y)} L ${pts} L ${sx(maxX)},${H - pad.bottom} L ${sx(0)},${H - pad.bottom} Z`
+
+  const last = dataPoints[dataPoints.length - 1].y
+  const positive = last >= 1000
+  const lineColor = positive ? '#00f5ff' : '#ff2d7a'
+  const glowId = 'cpGlow'
+  const gradId = 'cpArea'
+
+  const yTicks = [0, 0.25, 0.5, 0.75, 1].map(r => minY + r * rangeY)
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
+      <svg width={W} height={H} style={{ overflow: 'visible' }}>
+        <defs>
+          <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={lineColor} stopOpacity="0.35" />
+            <stop offset="100%" stopColor={lineColor} stopOpacity="0.02" />
+          </linearGradient>
+          <filter id={glowId} x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="2.5" result="blur" />
+            <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+          </filter>
+        </defs>
+
+        {/* Y-axis grid + labels */}
+        {yTicks.map((yVal, i) => (
+          <g key={i}>
+            <line x1={pad.left} y1={sy(yVal)} x2={W - pad.right} y2={sy(yVal)}
+              stroke="rgba(255,255,255,0.05)" strokeWidth="1" strokeDasharray="4,4" />
+            <text x={pad.left - 6} y={sy(yVal) + 4} fill="#4b5563" fontSize="9" textAnchor="end"
+              fontFamily="system-ui,sans-serif">
+              ${Math.round(yVal)}
+            </text>
+          </g>
+        ))}
+
+        {/* Baseline $1000 */}
+        {minY < 1000 && maxY > 1000 && (
+          <line x1={pad.left} y1={sy(1000)} x2={W - pad.right} y2={sy(1000)}
+            stroke="rgba(255,255,255,0.25)" strokeWidth="1" strokeDasharray="5,3" />
+        )}
+
+        {/* Area fill */}
+        <path d={areaPath} fill={`url(#${gradId})`} />
+
+        {/* Neon line */}
+        <path d={linePath} fill="none" stroke={lineColor} strokeWidth="2.5"
+          filter={`url(#${glowId})`} strokeLinecap="round" strokeLinejoin="round" />
+
+        {/* Accent dots every ~20% of points */}
+        {dataPoints
+          .filter((_, i) => i === 0 || i === maxX || (maxX > 4 && i % Math.max(1, Math.floor(maxX / 5)) === 0))
+          .map((p, i) => (
+            <circle key={i} cx={sx(p.x)} cy={sy(p.y)} r="3"
+              fill={lineColor} filter={`url(#${glowId})`} />
+          ))}
+
+        {/* Last point pulse ring */}
+        <circle cx={sx(maxX)} cy={sy(last)} r="5"
+          fill="none" stroke={lineColor} strokeWidth="1.5" strokeOpacity="0.5" />
+        <circle cx={sx(maxX)} cy={sy(last)} r="3" fill={lineColor} />
+        <circle cx={sx(maxX)} cy={sy(last)} r="1.5" fill="#000" />
+
+        {/* X-axis line */}
+        <line x1={pad.left} y1={H - pad.bottom} x2={W - pad.right} y2={H - pad.bottom}
+          stroke="rgba(255,255,255,0.1)" strokeWidth="1" />
+      </svg>
+      <p style={{ margin: 0, fontSize: '10px', color: '#4b5563', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+        Evolución del capital
+      </p>
+    </div>
+  )
+}
+
 function StatRow({ label, value, color = '#ffffff' }: { label: string; value: string; color?: string }) {
   return (
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
@@ -299,11 +407,16 @@ function BotPanel({ supabase, table, visible, onStatusChange, onNewSignal }: Bot
         </div>
       )}
 
-      {/* Stats + Pie card */}
+      {/* Stats + Capital Chart + Pie card */}
       <div style={{ border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px', padding: '24px', background: 'rgba(255,255,255,0.04)', backdropFilter: 'blur(10px)', boxShadow: '0 0 60px rgba(16,185,129,0.08), 0 0 100px rgba(168,85,247,0.08)' }}>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '32px' }}>
-          <div style={{ flex: '1', minWidth: '280px' }}>
-            <p style={{ margin: '0 0 16px 0', fontSize: '11px', fontWeight: 600, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Resumen de cuenta</p>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '28px', alignItems: 'flex-start' }}>
+
+          {/* Stats */}
+          <div style={{ flex: '1', minWidth: '200px', maxWidth: '280px' }}>
+            <p style={{ margin: '0 0 2px 0', fontSize: '11px', fontWeight: 600, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Resumen de cuenta</p>
+            <p style={{ margin: '0 0 14px 0', fontSize: '11px', color: '#34d399', fontVariantNumeric: 'tabular-nums' }}>
+              {new Date().toLocaleDateString('es-CL', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+            </p>
             <StatRow label="Capital inicial" value="$1,000.00" />
             <StatRow label="Saldo actual" value={`$${fmt(stats.balance)}`} color={stats.balance >= 1000 ? '#34d399' : '#f87171'} />
             <StatRow
@@ -311,15 +424,26 @@ function BotPanel({ supabase, table, visible, onStatusChange, onNewSignal }: Bot
               value={`${stats.pnl >= 0 ? '+' : ''}$${fmt(stats.pnl)} (${stats.pnlPct >= 0 ? '+' : ''}${stats.pnlPct.toFixed(2)}%)`}
               color={stats.pnl >= 0 ? '#34d399' : '#f87171'}
             />
-            <StatRow label="Operaciones cerradas" value={stats.totalOps.toString()} />
+            <StatRow label="Ops. cerradas" value={stats.totalOps.toString()} />
             <StatRow label="Win Rate" value={`${stats.winRate.toFixed(1)}%`} color={stats.winRate >= 50 ? '#34d399' : '#f87171'} />
             <StatRow label="USDT disponible" value={`$${fmt(pie.usdtAmt)}`} color="#34d399" />
             {pie.ethAmt > 0 && <StatRow label="En posición" value={`$${fmt(pie.ethAmt)}`} color="#c084fc" />}
           </div>
+
           <div style={{ width: '1px', background: 'linear-gradient(180deg, transparent, rgba(255,255,255,0.1), transparent)', alignSelf: 'stretch' }} />
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: '220px' }}>
+
+          {/* Capital evolution line chart */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flex: '2', minWidth: '280px' }}>
+            <CapitalChart ops={operations} />
+          </div>
+
+          <div style={{ width: '1px', background: 'linear-gradient(180deg, transparent, rgba(255,255,255,0.1), transparent)', alignSelf: 'stretch' }} />
+
+          {/* Pie chart */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: '200px' }}>
             <PieChart usdtPct={pie.usdtPct} ethPct={pie.ethPct} />
           </div>
+
         </div>
       </div>
 

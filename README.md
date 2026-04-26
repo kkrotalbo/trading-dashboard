@@ -2,12 +2,24 @@
 
 Panel web en tiempo real para visualizar las señales generadas por el [trading-bot](https://github.com/kkrotalbo/trading-bot). Construido con Next.js 14 y Supabase Realtime.
 
+## Changelog
+
+### v1.2.0
+- **Fecha en resumen**: el card "Resumen de cuenta" muestra la fecha actual debajo del título.
+- **Gráfico de evolución de capital**: nuevo gráfico de línea con estética cyberpunk (neon cyan/magenta) que muestra el crecimiento o caída del capital desde los $1,000 iniciales. El color cambia a magenta si el saldo cae por debajo del capital inicial.
+- **Layout mejorado**: el card principal ahora presenta tres secciones — estadísticas, gráfico de línea y gráfico de torta — en una fila horizontal responsiva.
+
+### v1.0.0
+- Lanzamiento inicial con dashboard en tiempo real, notificaciones y tabla de operaciones.
+
 ## Características
 
 - **Tiempo real**: recibe notificaciones de nuevas señales al instante, sin necesidad de refrescar la página (WebSocket via Supabase Realtime)
 - **Notificaciones visuales**: alerta automática cuando el bot registra una apertura o cierre de posición, con auto-dismiss a los 30 segundos
 - **Manejo de errores**: banner visible si hay problemas de conexión con Supabase
-- **Estadísticas**: saldo actual, P&L total, número de operaciones y win rate
+- **Estadísticas con fecha**: resumen de cuenta con fecha actual, saldo, P&L, operaciones y win rate
+- **Gráfico de capital**: línea neon (cyberpunk) que muestra la evolución del capital en el tiempo
+- **Distribución de portfolio**: gráfico de torta con USDT disponible vs capital en posición
 - **Historial completo**: tabla con todas las operaciones ordenadas de más reciente a más antigua
 - **Responsive**: funciona en móvil, tablet y escritorio
 
@@ -90,7 +102,8 @@ Railway te dará una URL pública (ej: `trading-dashboard.railway.app`) accesibl
 trading-dashboard/
 ├── app/
 │   ├── layout.tsx       # Layout raíz con metadata
-│   ├── page.tsx         # Dashboard principal (componente cliente)
+│   ├── page.tsx         # Punto de entrada — pasa credenciales Supabase
+│   ├── dashboard.tsx    # Dashboard principal: BotPanel, CapitalChart, PieChart
 │   └── globals.css      # Estilos globales + Tailwind
 ├── lib/
 │   └── supabase.ts      # Cliente de Supabase
